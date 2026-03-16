@@ -65,19 +65,19 @@ module mul16_pipe (
   output logic        o_valid
 );
 
-  logic        valid_s        [0:15];
-  logic [31:0] multiplicand_s [0:15];
-  logic [15:0] multiplier_s   [0:15];
-  logic [31:0] acc_s          [0:15];
+  logic        valid_s        [0:16];
+  logic [31:0] multiplicand_s [0:16];
+  logic [15:0] multiplier_s   [0:16];
+  logic [31:0] acc_s          [0:16];
 
-  assign o_ready = 1'b1;
+  assign o_ready = !reset;
 
   assign valid_s[0]        = i_valid;
   assign multiplicand_s[0] = {16'd0, i_payload_a};
   assign multiplier_s[0]   = i_payload_b;
   assign acc_s[0]          = 32'd0;
 
-    generate
+  generate
     for (genvar g = 0; g < 16; g = g + 1) begin : GEN_MUL_STAGE
       mul16_pipe_stage u_stage (
           .clk(clk)
