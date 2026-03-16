@@ -31,7 +31,7 @@ module mul16_stream_stage (
   output logic [31:0] o_acc
 );
 
-  always_ff @(posedge clk or posedge reset) begin
+  always_ff @(posedge clk) begin
     if (reset) begin
       o_valid        <= 1'b0;
       o_multiplicand <= 32'd0;
@@ -150,7 +150,7 @@ module mul16_pipe (
     end
   end
   
-  always_ff @(posedge clk or posedge reset) begin
+  always_ff @(posedge clk) begin
     if (reset) begin
       acc_q              <= '0;
       multiplicand_shr_q <= '0;
