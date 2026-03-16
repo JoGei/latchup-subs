@@ -99,6 +99,30 @@ module mul16_stream (
 
 endmodule
 
+module prefix_add_uncarry #(
+  parameter int W = 32
+)(
+  input  logic [W-1:0] i_a,
+  input  logic [W-1:0] i_b,
+  output logic [W-1:0] o_sum
+);
+
+  logic [W-1:0] p, g, c;
+
+  assign p = i_a ^ i_b;
+  assign g = i_a & i_b;
+  assign o_sum[0] = p[0];
+  generate
+    for (genvar i = 0; i < W; i++) begin
+      if(i < (W-1))
+      	assign c[i+1] = g[i] | (p[i] & c[i]);
+      if(i > 0)
+      	assign o_sum[i] = p[i] ^ c[i];
+    end
+  endgenerate
+
+endmodule
+
 module mul16_pipe (
   input  logic        clk,
   input  logic        reset,
@@ -110,7 +134,7 @@ module mul16_pipe (
   output logic        o_valid
 );
 
-  logic [31:0] acc_q, acc_n;
+  logic [31:0] acc_q, acc_n, add_n;
   logic active_q, active_n, done_q, done;
   logic [14:0] multiplier_shr_q, multiplier_shr_n;
   logic [31:0] multiplicand_shr_q, multiplicand_shr_n;
@@ -121,7 +145,12 @@ module mul16_pipe (
   assign o_product = acc_q;
   //assign o_valid = done; // combo forward to save a cycle
   //assign o_product = acc_n; // combo forward to save a cycle
-
+  prefix_add_uncarry #(.W(32)) inst_add (
+      .i_a(acc_q)
+    , .i_b(multiplicand_shr_q)
+    , .o_sum(add_n)
+  );
+  
   always_comb begin
     acc_n              = acc_q;
     active_n           = active_q;
