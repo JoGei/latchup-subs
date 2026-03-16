@@ -16,9 +16,8 @@
 // UNLINCENSED source code is here for ref.: https://github.com/JoGei/latchup-subs
 // Driven by intuition, brute force, and lack of research into problems and literature. ¯\_(ツ)_/¯
 
-`define PIPELINED // current solution
-
-`ifdef PIPELINED
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// some sub modules...
 module mul16_pipe_stage (
   input  logic        clk,
   input  logic        reset,
@@ -78,11 +77,10 @@ module mul16_pipe (
   assign multiplier_s[0]   = i_payload_b;
   assign acc_s[0]          = 32'd0;
 
-  genvar g;
-  generate
-    for (g = 0; g < 16; g = g + 1) begin : GEN_MUL_STAGE
+    generate
+    for (genvar g = 0; g < 16; g = g + 1) begin : GEN_MUL_STAGE
       mul16_pipe_stage u_stage (
-          .clk(clk),
+          .clk(clk)
         , .reset(reset)
         , .i_valid(valid_s[g])
         , .i_multiplicand(multiplicand_s[g])
@@ -101,8 +99,6 @@ module mul16_pipe (
 
 endmodule
 
-`else // `ifdef PIPELINED -> i.e. not pipelined
-
 module mul16_comb (
   input  logic [15:0] i_multiplicand,
   input  logic [15:0] i_multiplier,
@@ -112,8 +108,12 @@ module mul16_comb (
     o_product = i_multiplicand * i_multiplier; // native SV mul* allowed. Synths more efficiently. Todo: What is latchup synth using?
   end
 endmodule
-
-`endif // `ifdef PIPELINED
+// end of some sub modules.
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// some synth control, e.g., change the solution type ...
+`define PIPELINED // current solution
+// end of some synth control
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 module Solution (
   input wire clk,
