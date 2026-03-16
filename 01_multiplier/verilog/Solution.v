@@ -18,7 +18,7 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // some sub modules...
-module mul16_pipe_stage (
+module mul16_stream_stage (
   input  logic        clk,
   input  logic        reset,
   input  logic        i_valid,
@@ -39,7 +39,7 @@ module mul16_pipe_stage (
       o_acc          <= 32'd0;
     end else begin
       o_valid <= i_valid;
-
+      
       if (i_valid) begin
         o_acc          <= i_multiplier[0] ? (i_acc + i_multiplicand) : i_acc;
         o_multiplicand <= i_multiplicand << 1;
@@ -54,7 +54,7 @@ module mul16_pipe_stage (
 
 endmodule
 
-module mul16_pipe (
+module mul16_stream (
   input  logic        clk,
   input  logic        reset,
   output logic        o_ready,
@@ -79,7 +79,7 @@ module mul16_pipe (
 
   generate
     for (genvar g = 0; g < 16; g = g + 1) begin : GEN_MUL_STAGE
-      mul16_pipe_stage u_stage (
+      mul16_stream_stage u_stage (
           .clk(clk)
         , .reset(reset)
         , .i_valid(valid_s[g])
@@ -99,6 +99,68 @@ module mul16_pipe (
 
 endmodule
 
+module mul16_pipe (
+  input  logic        clk,
+  input  logic        reset,
+  output logic        o_ready,
+  input  logic        i_valid,
+  input  logic [15:0] i_multiplicand,
+  input  logic [15:0] i_multiplier,
+  output logic [31:0] o_product,
+  output logic        o_valid
+);
+
+  logic [31:0] acc_q, acc_n;
+  logic active_q, active_n, done_q, done;
+  logic [14:0] multiplier_shr_q, multiplier_shr_n;
+  logic [31:0] multiplicand_shr_q, multiplicand_shr_n;
+
+  assign done = active_q && (multiplier_shr_q == '0);
+  assign o_ready = !reset && !active_q;
+  assign o_valid = done_q;
+  assign o_product = acc_q;
+  //assign o_valid = done; // combo forward to save a cycle
+  //assign o_product = acc_n; // combo forward to save a cycle
+
+  always_comb begin
+    acc_n              = acc_q;
+    active_n           = active_q;
+    multiplier_shr_n   = multiplier_shr_q;
+    multiplicand_shr_n = multiplicand_shr_q;
+    if(!active_q) begin
+      if(i_valid) begin
+        acc_n = i_multiplier[0] ? {16'b0, i_multiplicand} : '0;
+        multiplier_shr_n = i_multiplier[15:1];
+        multiplicand_shr_n = {15'b0, i_multiplicand, 1'b0};
+        active_n = 1'b1;
+      end
+    end else begin
+      multiplier_shr_n   = multiplier_shr_q >> 1;
+      multiplicand_shr_n = multiplicand_shr_q << 1;
+      acc_n = acc_q + (multiplier_shr_q[0] ? (multiplicand_shr_q): '0);
+      active_n = !done;
+    end
+  end
+  
+  always_ff @(posedge clk or posedge reset) begin
+    if (reset) begin
+      acc_q              <= '0;
+      multiplicand_shr_q <= '0;
+      active_q           <= '0;
+      multiplier_shr_q   <= '0;
+      done_q             <= '0;
+    end else begin
+      acc_q              <= acc_n;
+      multiplicand_shr_q <= multiplicand_shr_n;
+      active_q           <= active_n;
+      multiplier_shr_q   <= multiplier_shr_n;
+      done_q             <= done;
+    end
+  end
+
+endmodule
+
+
 module mul16_comb (
   input  logic [15:0] i_multiplicand,
   input  logic [15:0] i_multiplier,
@@ -111,7 +173,8 @@ endmodule
 // end of some sub modules.
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // some synth control, e.g., change the solution type ...
-`define PIPELINED // current solution
+`define PIPELINED
+//`define STREAM // current solution
 // end of some synth control
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -133,12 +196,24 @@ module Solution (
     , .reset(reset)
     , .o_ready(i_ready)
     , .i_valid(i_valid)
+    , .i_multiplicand(i_payload_a)
+    , .i_multiplier(i_payload_b)
+    , .o_product(o_payload)
+    , .o_valid(o_valid)
+  );  
+`else // `ifdef PIPELINED -> i.e. not pipelined
+`ifdef STREAM
+  mul16_stream i_mul (
+      .clk(clk)
+    , .reset(reset)
+    , .o_ready(i_ready)
+    , .i_valid(i_valid)
     , .i_payload_a(i_payload_a)
     , .i_payload_b(i_payload_b)
     , .o_payload(o_payload)
     , .o_valid(o_valid)
   );
-`else // `ifdef PIPELINED -> i.e. not pipelined
+`else // `ifdef STREAM -> i.e. not pipelined
   mul16_comb i_mul (
     .i_multiplicand(i_payload_a),
     .i_multiplier(i_payload_b),
@@ -148,5 +223,6 @@ module Solution (
   assign o_valid = i_valid;
 
 `endif // `ifdef PIPELINED
+`endif // `ifdef STREAM
 
 endmodule
