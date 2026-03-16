@@ -1,9 +1,9 @@
-= latchup submissions
+= latchup.app submissions
 
+Driven by intuition, a fair amount of brute force, and lack of time to research the problems and literature. `¯\\_(ツ)_/¯`
 
-Driven by intuition, a fair amount of brute force, and lack of time to research the problems and literature. `¯\_(ツ)_/¯`
-
-https://www.latchup.app/[Latchup - Think you're good at RTL? Prove it.] image:https://latchup.app/badge/user/91eb2527-fcbb-4cc4-89da-fea225edffc7.sv[link="https://latchup.app/user/91eb2527-fcbb-4cc4-89da-fea225edffc7",title="Latchup Badge"] 
+https://www.latchup.app/[Latchup - Think you're good at RTL? Prove it.] 
+image:https://latchup.app/badge/user/91eb2527-fcbb-4cc4-89da-fea225edffc7.svg[Latchup Badge, link=https://latchup.app/user/91eb2527-fcbb-4cc4-89da-fea225edffc7]
 
 
 WARNING: Well... I do not claim to be excellent at RTL. Do not use this as a state-of-the-art implementation of these algorithms.
