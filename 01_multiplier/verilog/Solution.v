@@ -129,7 +129,11 @@ module mul16_pipe (
     multiplicand_shr_n = multiplicand_shr_q;
     if(!active_q) begin
       if(i_valid) begin
-        acc_n = i_multiplier[0] ? {16'b0, i_multiplicand} : '0;
+        if(i_multiplier[0])
+          acc_n = {16'b0, i_multiplicand};
+        else
+          acc_n = '0;
+
         multiplier_shr_n = i_multiplier[15:1];
         multiplicand_shr_n = {15'b0, i_multiplicand, 1'b0};
         active_n = 1'b1;
@@ -137,7 +141,11 @@ module mul16_pipe (
     end else begin
       multiplier_shr_n   = multiplier_shr_q >> 1;
       multiplicand_shr_n = multiplicand_shr_q << 1;
-      acc_n = acc_q + (multiplier_shr_q[0] ? (multiplicand_shr_q): '0);
+
+      //acc_n = acc_q + (multiplier_shr_q[0] ? (multiplicand_shr_q): '0);
+      // if() then behaves better than ternary
+      if(multiplier_shr_q[0])
+        acc_n = add_n;
       active_n = !done;
     end
   end
